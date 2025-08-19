@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Коммерческое предложение: Концепция развития территории</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* General Styles */
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #4A4A4A;
+            background-color: #fdfaf6; /* Beige background */
+            margin: 0;
+            padding: 40px;
+            box-sizing: border-box;
+        }
+
+        .wrapper {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        /* Page container with A4 dimensions */
+        .page {
+            background-color: #ffffff;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 0 auto 30px auto; /* Center page and add bottom margin */
+            width: 21cm; /* A4 width */
+            min-height: 29.7cm; /* A4 height */
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header with Background Image */
+        .header {
+            background-image: linear-gradient(rgba(15, 32, 39, 0.75), rgba(15, 32, 39, 0.75)), url('https://images.unsplash.com/photo-1501854140801-50d01698950b?q=80&w=2100&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            padding: 60px 40px;
+            text-align: center;
+            color: #ffffff;
+        }
+        .header h1 {
+            font-size: 2.3em;
+            font-weight: 700;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .header p {
+            font-size: 1.1em;
+            font-weight: 400;
+            margin: 10px 0 0;
+            opacity: 0.9;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            padding: 40px;
+            flex-grow: 1; /* Allow content to fill the page height */
+        }
+        
+        p, li {
+            font-size: 0.95em;
+        }
+
+        /* Intro Section */
+        .intro {
+            text-align: center;
+            margin-bottom: 50px;
+            font-size: 1em;
+            color: #333;
+        }
+        
+        /* Two-Column Layout */
+        .layout-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 50px;
+        }
+
+        /* Section Titles */
+        h3 {
+            font-size: 1em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #5F6F52; /* Olive Accent Color */
+            margin-top: 0;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eef2f5;
+        }
+        
+        /* Page 2 Title */
+        .page-title {
+            text-align: center;
+            font-size: 1.7em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 40px;
+        }
+
+        /* Left Column Specifics */
+        .left-column .section {
+            margin-bottom: 40px;
+        }
+        .left-column p {
+            margin: 0 0 10px 0;
+        }
+        .left-column strong {
+            color: #333;
+        }
+
+        /* Map Image */
+        .map-image {
+            width: 100%;
+            border-radius: 6px;
+            margin-top: 15px;
+            border: 1px solid #eef2f5;
+        }
+
+        /* Right Column Specifics */
+        .right-column .section {
+            margin-bottom: 40px;
+        }
+        .right-column ul {
+            list-style: none;
+            padding: 0;
+        }
+        .right-column li {
+            margin-bottom: 10px;
+            padding-left: 20px;
+            position: relative;
+        }
+        .right-column li::before {
+            content: '•';
+            color: #5F6F52; /* Olive Accent Color */
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+            top: -2px;
+            font-size: 1.2em;
+        }
+        
+        /* Stages Section Styling */
+        .stage-item {
+            background-color: #f8f9fa;
+            border: 1px solid #eef2f5;
+            border-left: 4px solid #5F6F52; /* Olive Accent Color */
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }
+        .stage-item h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-weight: 600;
+            font-size: 1em;
+        }
+        .stage-item p {
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+        
+        /* Footer Note */
+        .footer-note {
+            text-align: center;
+            padding-top: 20px;
+            font-size: 0.9em;
+            color: #7f8c8d;
+        }
+        
+        /* Footer Image */
+        .footer-image-container {
+            width: 100%;
+            height: 250px;
+            margin-top: auto; /* Pushes image to the bottom */
+            background-size: cover;
+            background-position: center;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 800px) {
+            body {
+                padding: 10px;
+            }
+            .page {
+                width: 100%;
+                min-height: auto;
+                margin: 0 0 20px 0;
+            }
+            .layout-grid {
+                grid-template-columns: 1fr;
+            }
+            .header {
+                padding: 40px 20px;
+            }
+            .main-content {
+                padding: 30px;
+            }
+        }
+        
+        /* Print-specific styles */
+        @media print {
+            @page {
+                size: A4;
+                margin: 0;
+            }
+            body {
+                padding: 0;
+                margin: 0;
+                background-color: #fff;
+            }
+            .wrapper {
+                box-shadow: none;
+                margin: 0;
+                max-width: none;
+            }
+            .page {
+                box-shadow: none;
+                margin: 0;
+                border-radius: 0;
+                width: 21cm;
+                height: 29.7cm;
+                page-break-after: always;
+            }
+            .page:last-child {
+                page-break-after: avoid;
+            }
+            .header, .footer-image-container {
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrapper">
+        <!-- PAGE 1: PROJECT CONCEPT -->
+        <div class="page">
+            <header class="header">
+                <h1>Концепция развития территории</h1>
+                <p>Московская область, Можайский район, д. Збышки</p>
+            </header>
+
+            <main class="main-content">
+                <div class="intro">
+                    <h3>Цель работы</h3>
+                    <p>Мы разрабатываем готовую концепцию развития территории. Результат — понятная стратегия и инвестиционный пакет, которые помогут запустить проект, привлечь инвесторов или увеличить капитализацию земли.</p>
+                </div>
+
+                <div class="layout-grid">
+                    <aside class="left-column">
+                        <div class="section">
+                            <h3>Территория проектирования</h3>
+                            <p>В концепцию входят два земельных участка общей площадью <strong>~6,6 га</strong>:</p>
+                            <p>• 50:18:0080453:209 (13 657 кв.м)</p>
+                            <p>• 50:18:0080453:218 (52 190 кв.м)</p>
+                            <p>📌 Участки рассматриваются как единый проект с возможностью поэтапного освоения.</p>
+                            <img src="https://github.com/magpie36/pereplan/blob/main/Screenshot%202025-08-19%20at%2014.41.24.png?raw=true" alt="Карта участка в д. Збышки" class="map-image">
+                        </div>
+                    </aside>
+
+                    <div class="right-column">
+                        <div class="section">
+                            <h3>Состав концепции</h3>
+                            <ul>
+                                <li>Уникальная концепция загородного отеля</li>
+                                <li>Финансовая модель и прогноз окупаемости</li>
+                                <li>Мастер-план территории (зонирование, потоки, размещение)</li>
+                                <li>Архитектурные решения и планировки домов</li>
+                                <li>Дорожная карта реализации (подрядчики, управление)</li>
+                                <li>Маркетинговое исследование конкурентов и ЦА</li>
+                            </ul>
+                        </div>
+                         <div class="section">
+                            <h3>Ваши выгоды</h3>
+                            <ul>
+                                <li><strong>Презентация для инвесторов:</strong> Готовый бизнес-план для убедительной презентации вашего проекта.</li>
+                                <li><strong>Привлечение капитала:</strong> Пакет документов для получения банковского финансирования, грантов или субсидий.</li>
+                                <li><strong>Уверенный старт строительства:</strong> Четкая дорожная карта, которая исключает ошибки и экономит бюджет.</li>
+                                <li><strong>Рост капитализации:</strong> Увеличение стоимости вашего земельного актива в 2-3 раза.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- PAGE 2: COMMERCIALS -->
+        <div class="page">
+            <main class="main-content">
+                <h2 class="page-title">Формат одного окна для отельеров</h2>
+                <div class="layout-grid">
+                    <aside class="left-column">
+                        <div class="section">
+                            <h3>Ключевые условия</h3>
+                            <p><strong>Стоимость:</strong> 750 000 ₽ + участок земли</p>
+                            <p><strong>Срок:</strong> 6–8 недель</p>
+                        </div>
+                        <div class="section">
+                            <h3>Наше предложение</h3>
+                            <p><strong>1. Готовый бизнес:</strong> Вы получаете полный проектный пакет, включающий финансовую модель, контакты проверенных подрядчиков и управляющую компанию.</p>
+                            <p><strong>2. Полное сопровождение:</strong> Возьмем на себя реализацию проекта «под ключ» — от подготовки участка до запуска отеля — за девелоперское вознаграждение.</p>
+                        </div>
+                    </aside>
+                    <div class="right-column">
+                         <div class="section">
+                            <h3>Этапы (50/30/20)</h3>
+                            <div class="stage-item">
+                                <h4>Старт (50%)</h4>
+                                <p><strong>Оплата:</strong> 375 000 ₽ + нотариальное соглашение о передаче 20 соток.</p>
+                                <p><strong>Результат:</strong> Понимание потенциала и направлений развития.</p>
+                            </div>
+                            <div class="stage-item">
+                                <h4>Мастер-план и архитектура (30%)</h4>
+                                <p><strong>Оплата:</strong> 225 000 ₽</p>
+                                <p><strong>Результат:</strong> Концепция + корректировка и подтверждение участка.</p>
+                            </div>
+                            <div class="stage-item">
+                                <h4>Финализация (20%)</h4>
+                                <p><strong>Оплата:</strong> 150 000 ₽</p>
+                                <p><strong>Результат:</strong> Инвестиционный пакет, готовый к реализации.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="footer-note">
+                    <p>Финальные условия и стоимость работ будут зафиксированы в договоре после согласования всех деталей проекта.</p>
+                </div>
+            </main>
+            <div class="footer-image-container" style="background-image: linear-gradient(rgba(15, 32, 39, 0.75), rgba(15, 32, 39, 0.75)), url('https://avatars.mds.yandex.net/get-marketcms/1779479/img-c26ca20d-e7b1-4abf-ad5c-7b8b4c5ee819.jpeg/optimize');">
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
