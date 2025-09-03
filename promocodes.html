@@ -79,45 +79,33 @@
 
         // --- Глобальное состояние ---
         let state = {
-            view: 'form', promoCode: '', isButtonHovered: false, deals: [],
+            view: 'form', promoCode: '', isFindButtonHovered: false, isBackHovered: false, deals: [],
             message: { text: 'Введите промокод, чтобы начать поиск.', type: 'info' },
             loaderAngle: 0, scrollOffset: 0, totalContentHeight: 0,
             clickedDeal: { id: null, timestamp: 0 },
             isDragging: false, dragStartY: 0, lastDragY: 0,
             isInputFocused: false, showCursor: false,
-            logo: new Image(), // <-- НОВОЕ: для логотипа
-            isLogoLoaded: false // <-- НОВОЕ: флаг загрузки логотипа
+            logo: new Image(),
+            isLogoLoaded: false
         };
         
-        // --- ИЗМЕНЕНО: Загрузка логотипа ---
         state.logo.src = 'https://img.hhcdn.ru/employer-logo-original/925716.png';
         state.logo.onload = () => {
             state.isLogoLoaded = true;
-            draw(); // Перерисовываем холст после загрузки лого
+            draw();
         };
         
-        // --- Карта стадий Bitrix24 обновлена вашими данными ---
         const stageMap = {
-            'PREPARATION': '1. Новая сделка',
-            'UC_RMH5CV': '2. Данные запрошены',
-            'UC_YTOAQP': '3. Предварительная стоимость озвучена',
-            'NEW': '4. Счет отправлен',
-            '8': '5. Оплата за выезд получена',
-            'UC_6WDTZ5': '6. Выезд осуществлен',
-            'UC_OHR1FC': '7. Отчет получен, на обсуждении',
-            '9': '8. Итоговое КП презентовано',
-            'UC_DGKCRT': '9. Договор согласован',
-            'WON': '11. Оплата получена, передано в производство',
-            'LOSE': '10. Не ЦА',
-            'UC_BIKW56': '11. Другой регион',
-            'UC_R1RYA6': '12. Не выходит на связь',
-            'UC_EGG0U5': '13. Хотел согласовать с нарушениями',
-            'UC_XBRO6S': '14. На перспективу',
-            'UC_Z5PN09': '15. Не оказываем требуемые услуги',
-            'UC_FLINGE': '16. Уже заказали в другой компании',
-            'UC_93DGG9': '17. Дорого',
-            'UC_HPUIEM': '18. Не будут делать ремонт с перепланировкой',
-            'UC_MK6T4F': '19. Долго',
+            'PREPARATION': '1. Новая сделка', 'UC_RMH5CV': '2. Данные запрошены',
+            'UC_YTOAQP': '3. Предварительная стоимость озвучена', 'NEW': '4. Счет отправлен',
+            '8': '5. Оплата за выезд получена', 'UC_6WDTZ5': '6. Выезд осуществлен',
+            'UC_OHR1FC': '7. Отчет получен, на обсуждении', '9': '8. Итоговое КП презентовано',
+            'UC_DGKCRT': '9. Договор согласован', 'WON': '11. Оплата получена, передано в производство',
+            'LOSE': '10. Не ЦА', 'UC_BIKW56': '11. Другой регион',
+            'UC_R1RYA6': '12. Не выходит на связь', 'UC_EGG0U5': '13. Хотел согласовать с нарушениями',
+            'UC_XBRO6S': '14. На перспективу', 'UC_Z5PN09': '15. Не оказываем требуемые услуги',
+            'UC_FLINGE': '16. Уже заказали в другой компании', 'UC_93DGG9': '17. Дорого',
+            'UC_HPUIEM': '18. Не будут делать ремонт с перепланировкой', 'UC_MK6T4F': '19. Долго',
             '10': 'Тест / отладка'
         };
 
@@ -154,30 +142,23 @@
         function getUI(width, height) {
             const scale = width / 420;
             const padding = 20 * scale;
-            const headerHeight = 100 * scale; // Увеличили высоту для логотипа
+            const headerHeight = 100 * scale;
             const searchAreaHeight = 70 * scale;
-            const inputRectWidth = width - (padding * 2);
+            const inputHeight = 44 * scale;
+
+            // --- ИЗМЕНЕНО: Расчет для поля ввода и кнопки "Найти" ---
+            const findButtonWidth = 80 * scale;
+            const inputWidth = width - (padding * 2) - findButtonWidth - (10 * scale);
+            const searchY = headerHeight + (searchAreaHeight - inputHeight) / 2;
 
             return {
-                scale: scale,
-                padding: padding,
-                headerHeight: headerHeight,
+                scale: scale, padding: padding, headerHeight: headerHeight,
                 searchAreaHeight: searchAreaHeight,
-                logoRect: { // <-- НОВОЕ: координаты и размер лого
-                    size: 40 * scale,
-                    x: width - padding - (40 * scale),
-                    y: (headerHeight / 2) - (40 * scale) - (5 * scale)
-                },
-                titlePos: { // <-- НОВОЕ: позиция заголовка
-                    x: width / 2,
-                    y: headerHeight / 2 + 10 * scale
-                },
-                inputRect: { // <-- ИЗМЕНЕНО: X координата для центрирования
-                    width: inputRectWidth,
-                    height: 44 * scale,
-                    x: (width - inputRectWidth) / 2,
-                    y: headerHeight + (searchAreaHeight - (44 * scale)) / 2
-                },
+                logoRect: { size: 40 * scale, x: width - padding - (40 * scale), y: (headerHeight / 2) - (40 * scale) - (5 * scale) },
+                titlePos: { x: width / 2, y: headerHeight / 2 + 10 * scale },
+                inputRect: { width: inputWidth, height: inputHeight, x: padding, y: searchY },
+                findButtonRect: { width: findButtonWidth, height: inputHeight, x: padding + inputWidth + (10 * scale), y: searchY },
+                backButtonRect: { x: padding, y: headerHeight / 2 + 5 * scale, width: 80 * scale, height: 30 * scale },
                 resultsAreaY: headerHeight + searchAreaHeight
             };
         }
@@ -194,12 +175,16 @@
             const ui = getUI(width, height);
             
             drawResults(ui, width, height);
-            drawStaticUI(ui, width, height);
+            
+            if (state.view === 'results') {
+                drawHeader(ui, width, true); // true, чтобы показать кнопку "Назад"
+            } else {
+                drawStaticSearchUI(ui, width, height);
+            }
         }
         
         // --- Функции отрисовки компонентов ---
-        function drawStaticUI(ui, width, height) {
-            // Фон для хедера и поиска
+        function drawStaticSearchUI(ui, width, height) {
             ctx.fillStyle = COLORS.background;
             ctx.fillRect(0, 0, width, ui.resultsAreaY);
             ctx.save();
@@ -209,7 +194,6 @@
             ctx.fillRect(0, 0, width, ui.resultsAreaY);
             ctx.restore();
 
-
             ctx.strokeStyle = COLORS.border;
             ctx.lineWidth = 1;
             ctx.beginPath();
@@ -217,21 +201,32 @@
             ctx.lineTo(width, ui.resultsAreaY);
             ctx.stroke();
             
-            drawHeader(ui, width);
+            drawHeader(ui, width, false); // false, чтобы скрыть кнопку "Назад"
             drawSearchForm(ui, width);
         }
 
-        function drawHeader(ui, width) {
-            // --- НОВОЕ: Отрисовка логотипа ---
+        function drawHeader(ui, width, showBackButton = false) {
             if (state.isLogoLoaded) {
                 const {x, y, size} = ui.logoRect;
                 ctx.drawImage(state.logo, x, y, size, size);
             }
             
-            // --- ИЗМЕНЕНО: Заголовок по центру ---
+            if (showBackButton) {
+                const btn = ui.backButtonRect;
+                ctx.fillStyle = state.isBackHovered ? COLORS.inputBg : 'transparent';
+                drawRoundRect(btn.x, btn.y, btn.width, btn.height, 8 * ui.scale);
+                ctx.fill();
+                
+                ctx.fillStyle = COLORS.brandBlue;
+                ctx.font = `500 ${16 * ui.scale}px Inter`;
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('‹ Назад', btn.x + 8 * ui.scale, btn.y + btn.height / 2);
+            }
+
             ctx.fillStyle = COLORS.darkText;
             ctx.font = `bold ${30 * ui.scale}px Inter`;
-            ctx.textAlign = 'center'; // <-- Выравнивание по центру
+            ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText('Ваши заказы', ui.titlePos.x, ui.titlePos.y);
         }
@@ -239,12 +234,11 @@
         function drawSearchForm(ui, width) {
             const { x, y, width: inputWidth, height } = ui.inputRect;
 
-            // --- Поле ввода ---
+            // Поле ввода
             ctx.fillStyle = COLORS.inputBg;
             drawRoundRect(x, y, inputWidth, height, 12 * ui.scale);
             ctx.fill();
 
-            // Иконка лупы
             const iconX = x + 15 * ui.scale;
             const iconY = y + height / 2;
             ctx.strokeStyle = COLORS.secondaryText;
@@ -255,7 +249,6 @@
             ctx.lineTo(iconX + 5 * ui.scale, iconY + 5 * ui.scale);
             ctx.stroke();
 
-            // Текст и курсор
             const textX = iconX + 22 * ui.scale;
             ctx.textAlign = 'left';
             ctx.font = `${16 * ui.scale}px Inter`;
@@ -264,17 +257,27 @@
                 ctx.fillText(state.promoCode, textX, iconY);
             } else if (!state.isInputFocused) {
                 ctx.fillStyle = COLORS.placeholder;
-                ctx.fillText('Введите промокод', textX, iconY);
+                ctx.fillText('Промокод', textX, iconY);
             }
             if (state.isInputFocused && state.showCursor) {
                 const textWidth = ctx.measureText(state.promoCode).width;
                 ctx.fillStyle = COLORS.brandBlue;
                 ctx.fillRect(textX + textWidth + 1, iconY - 10 * ui.scale, 2 * ui.scale, 20 * ui.scale);
             }
+
+            // --- НОВОЕ: Отрисовка кнопки "Найти" ---
+            const btn = ui.findButtonRect;
+            ctx.fillStyle = state.isFindButtonHovered ? '#0056b3' : COLORS.brandBlue;
+            drawRoundRect(btn.x, btn.y, btn.width, btn.height, 12 * ui.scale);
+            ctx.fill();
+            ctx.fillStyle = COLORS.cardBg;
+            ctx.font = `600 ${16 * ui.scale}px Inter`;
+            ctx.textAlign = 'center';
+            ctx.fillText('Найти', btn.x + btn.width / 2, btn.y + btn.height / 2);
         }
         
         function drawResults(ui, width, height) {
-            const resultsClipY = ui.resultsAreaY;
+            const resultsClipY = (state.view === 'results') ? ui.headerHeight : ui.resultsAreaY;
             const resultsHeight = height - resultsClipY;
             
             ctx.save();
@@ -285,7 +288,7 @@
             ctx.fillStyle = COLORS.background;
             ctx.fillRect(0, resultsClipY, width, resultsHeight);
 
-            if (state.view === 'loading') { // Показываем лоадер
+            if (state.view === 'loading') {
                 const centerX = width / 2;
                 const centerY = resultsClipY + resultsHeight / 2;
                 ctx.beginPath();
@@ -312,7 +315,6 @@
                 const cardHeight = 85 * ui.scale;
                 deal.rect = { x: ui.padding, y: currentY, width: width - ui.padding * 2, height: cardHeight };
                 
-                // --- Отрисовка карточки сделки ---
                 ctx.fillStyle = COLORS.cardBg;
                 drawRoundRect(deal.rect.x, deal.rect.y, deal.rect.width, deal.rect.height, 12 * ui.scale);
                 if (state.clickedDeal.id === deal.ID) {
@@ -324,10 +326,8 @@
                 ctx.strokeStyle = COLORS.border;
                 ctx.stroke();
 
-                // Текст
                 ctx.textAlign = 'left';
                 ctx.textBaseline = 'middle';
-                
                 const stageName = stageMap[deal.STAGE_ID] || deal.STAGE_ID || 'Не указана';
                 ctx.fillStyle = COLORS.darkText;
                 ctx.font = `600 ${15 * ui.scale}px Inter`;
@@ -355,11 +355,11 @@
         async function fetchDeals() {
             if (!state.promoCode) {
                 state.deals = [];
-                state.message = { text: 'Введите промокод, чтобы начать поиск.', type: 'info' };
+                state.message = { text: 'Введите промокод.', type: 'info' };
                 return;
             }
             state.view = 'loading';
-            state.message.text = '';
+            state.message = { text: '', type: 'info' };
             
             const bitrixWebhookUrl = 'https://crm.pereplan-one.ru/rest/27754/j59q6uk0m5mddshs/crm.deal.list.json';
             try {
@@ -374,16 +374,17 @@
                 const data = await response.json();
                 if (data.result && data.result.length > 0) {
                     state.deals = data.result;
-                    state.message.text = '';
+                    state.view = 'results';
                 } else {
                     state.deals = [];
                     state.message = { text: 'Сделки не найдены.', type: 'info' };
+                    state.view = 'form';
                 }
             } catch (error) {
                 state.deals = [];
                 state.message = { text: 'Ошибка сети. Попробуйте позже.', type: 'error' };
+                state.view = 'form';
             } finally {
-                state.view = 'form'; // Всегда возвращаемся в этот режим
                 state.scrollOffset = 0;
                 resizeAndDraw();
             }
@@ -427,8 +428,7 @@
         
         hiddenInput.addEventListener('input', (e) => {
             state.promoCode = e.target.value;
-            state.message.text = '';
-            if(e.target.value === '') {
+            if(state.promoCode === '') {
                 state.deals = [];
                 state.message = { text: 'Введите промокод, чтобы начать поиск.', type: 'info' };
             }
@@ -437,7 +437,7 @@
         hiddenInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 fetchDeals();
-                hiddenInput.blur(); // Скрываем клавиатуру
+                hiddenInput.blur();
             }
         });
         
@@ -446,6 +446,7 @@
 
         function handlePointerMove(e) {
             const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX || e.touches[0].clientX) - rect.left;
             const y = (e.clientY || e.touches[0].clientY) - rect.top;
             
             if (state.isDragging) {
@@ -457,7 +458,17 @@
                  const listHeight = state.totalContentHeight - ui.resultsAreaY - ui.padding;
                  const minScroll = Math.min(0, resultsHeight - listHeight - ui.padding);
                  state.scrollOffset = Math.max(minScroll, Math.min(0, state.scrollOffset));
+                 return;
             }
+
+            const ui = getUI(rect.width, rect.height);
+            const findBtn = ui.findButtonRect;
+            state.isFindButtonHovered = (x > findBtn.x && x < findBtn.x + findBtn.width && y > findBtn.y && y < findBtn.y + findBtn.height);
+            
+            const backBtn = ui.backButtonRect;
+            state.isBackHovered = (x > backBtn.x && x < backBtn.x + backBtn.width && y > backBtn.y && y < backBtn.y + backBtn.height);
+            
+            canvas.style.cursor = (state.isFindButtonHovered || state.isBackHovered) ? 'pointer' : 'default';
         }
 
         function handlePointerDown(e) {
@@ -486,6 +497,22 @@
                     hiddenInput.focus();
                 }
 
+                // Клик по кнопке Найти
+                const findBtn = ui.findButtonRect;
+                if (state.view !== 'results' && x > findBtn.x && x < findBtn.x + findBtn.width && y > findBtn.y && y < findBtn.y + findBtn.height) {
+                    fetchDeals();
+                    hiddenInput.blur();
+                }
+
+                // Клик по кнопке Назад
+                const backBtn = ui.backButtonRect;
+                if (state.view === 'results' && x > backBtn.x && x < backBtn.x + backBtn.width && y > backBtn.y && y < backBtn.y + backBtn.height) {
+                    state.view = 'form';
+                    state.deals = [];
+                    state.message = { text: 'Введите промокод, чтобы начать поиск.', type: 'info' };
+                    resizeAndDraw();
+                }
+
                 if (y > ui.resultsAreaY) {
                     state.deals.forEach(deal => {
                         const dealTop = deal.rect.y + state.scrollOffset;
@@ -505,7 +532,7 @@
         canvas.addEventListener('mousemove', handlePointerMove);
         canvas.addEventListener('mousedown', handlePointerDown);
         canvas.addEventListener('mouseup', handlePointerUp);
-        canvas.addEventListener('mouseleave', () => { state.isDragging = false; });
+        canvas.addEventListener('mouseleave', () => { state.isDragging = false; canvas.style.cursor = 'default'; });
         
         canvas.addEventListener('touchmove', handlePointerMove, { passive: true });
         canvas.addEventListener('touchstart', handlePointerDown, { passive: true });
