@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>PEREPLAN | Apple Design</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 10px;
+            background-color: #f0f0f0;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        #canvas-container {
+            position: relative;
+            width: 100%;
+            max-width: 420px;
+            height: 90vh;
+            max-height: 850px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border-radius: 20px;
+            border: 1px solid #e5e5e5;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border-radius: 20px;
+            background-color: #f9f9f9;
+            touch-action: none;
+        }
+
+        #hidden-input {
+            position: absolute;
+            opacity: 0;
+            border: none;
+            background: transparent;
+            color: #333;
+            caret-color: #333;
+            outline: none;
+            padding: 0;
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container">
+        <canvas id="appCanvas"></canvas>
+        <input type="text" id="hidden-input" autocomplete="off">
+    </div>
+
+    <script>
+        const canvasContainer = document.getElementById('canvas-container');
+        const canvas = document.getElementById('appCanvas');
+        const ctx = canvas.getContext('2d');
+        const hiddenInput = document.getElementById('hidden-input');
+
+        // --- Стили и константы ---
+        const COLORS = {
+            brandBlue: '#007AFF', darkText: '#000000', secondaryText: '#8A8A8E',
+            border: '#E5E5E5', background: '#F9F9F9', placeholder: '#C7C7CC',
+            error: '#FF3B30', info: '#8A8A8E', cardBg: '#FFFFFF',
+            cardHighlight: 'rgba(0, 122, 255, 0.05)', scrollbar: '#C7C7CC',
+            inputBg: '#EFEFF4'
+        };
+
+        // --- Глобальное состояние ---
+        let state = {
+            view: 'form', promoCode: '', isButtonHovered: false, deals: [],
+            message: { text: 'Введите промокод, чтобы начать поиск.', type: 'info' },
+            loaderAngle: 0, scrollOffset: 0, totalContentHeight: 0,
+            clickedDeal: { id: null, timestamp: 0 },
+            isDragging: false, dragStartY: 0, lastDragY: 0,
+            isInputFocused: false, showCursor: false,
+            logo: new Image(), // <-- НОВОЕ: для логотипа
+            isLogoLoaded: false // <-- НОВОЕ: флаг загрузки логотипа
+        };
+        
+        // --- ИЗМЕНЕНО: Загрузка логотипа ---
+        state.logo.src = 'https://img.hhcdn.ru/employer-logo-original/925716.png';
+        state.logo.onload = () => {
+            state.isLogoLoaded = true;
+            draw(); // Перерисовываем холст после загрузки лого
+        };
+        
+        // --- Карта стадий Bitrix24 обновлена вашими данными ---
+        const stageMap = {
+            'PREPARATION': '1. Новая сделка',
+            'UC_RMH5CV': '2. Данные запрошены',
+            'UC_YTOAQP': '3. Предварительная стоимость озвучена',
+            'NEW': '4. Счет отправлен',
+            '8': '5. Оплата за выезд получена',
+            'UC_6WDTZ5': '6. Выезд осуществлен',
+            'UC_OHR1FC': '7. Отчет получен, на обсуждении',
+            '9': '8. Итоговое КП презентовано',
+            'UC_DGKCRT': '9. Договор согласован',
+            'WON': '11. Оплата получена, передано в производство',
+            'LOSE': '10. Не ЦА',
+            'UC_BIKW56': '11. Другой регион',
+            'UC_R1RYA6': '12. Не выходит на связь',
+            'UC_EGG0U5': '13. Хотел согласовать с нарушениями',
+            'UC_XBRO6S': '14. На перспективу',
+            'UC_Z5PN09': '15. Не оказываем требуемые услуги',
+            'UC_FLINGE': '16. Уже заказали в другой компании',
+            'UC_93DGG9': '17. Дорого',
+            'UC_HPUIEM': '18. Не будут делать ремонт с перепланировкой',
+            'UC_MK6T4F': '19. Долго',
+            '10': 'Тест / отладка'
+        };
+
+        // --- Вспомогательные функции ---
+        function drawRoundRect(x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+        }
+        
+        function truncateText(text, maxWidth) {
+            let width = ctx.measureText(text).width;
+            const ellipsis = '…';
+            const ellipsisWidth = ctx.measureText(ellipsis).width;
+            if (width <= maxWidth) {
+                return text;
+            }
+            while (width >= maxWidth - ellipsisWidth) {
+                text = text.substring(0, text.length - 1);
+                width = ctx.measureText(text).width;
+            }
+            return text + ellipsis;
+        }
+
+        // --- Динамический расчет UI ---
+        function getUI(width, height) {
+            const scale = width / 420;
+            const padding = 20 * scale;
+            const headerHeight = 100 * scale; // Увеличили высоту для логотипа
+            const searchAreaHeight = 70 * scale;
+            const inputRectWidth = width - (padding * 2);
+
+            return {
+                scale: scale,
+                padding: padding,
+                headerHeight: headerHeight,
+                searchAreaHeight: searchAreaHeight,
+                logoRect: { // <-- НОВОЕ: координаты и размер лого
+                    size: 40 * scale,
+                    x: width - padding - (40 * scale),
+                    y: (headerHeight / 2) - (40 * scale) - (5 * scale)
+                },
+                titlePos: { // <-- НОВОЕ: позиция заголовка
+                    x: width / 2,
+                    y: headerHeight / 2 + 10 * scale
+                },
+                inputRect: { // <-- ИЗМЕНЕНО: X координата для центрирования
+                    width: inputRectWidth,
+                    height: 44 * scale,
+                    x: (width - inputRectWidth) / 2,
+                    y: headerHeight + (searchAreaHeight - (44 * scale)) / 2
+                },
+                resultsAreaY: headerHeight + searchAreaHeight
+            };
+        }
+
+        // --- Главная функция отрисовки ---
+        function draw() {
+            const dpr = window.devicePixelRatio || 1;
+            const width = canvas.width / dpr;
+            const height = canvas.height / dpr;
+
+            ctx.fillStyle = COLORS.background;
+            ctx.fillRect(0, 0, width, height);
+
+            const ui = getUI(width, height);
+            
+            drawResults(ui, width, height);
+            drawStaticUI(ui, width, height);
+        }
+        
+        // --- Функции отрисовки компонентов ---
+        function drawStaticUI(ui, width, height) {
+            // Фон для хедера и поиска
+            ctx.fillStyle = COLORS.background;
+            ctx.fillRect(0, 0, width, ui.resultsAreaY);
+            ctx.save();
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.05)';
+            ctx.shadowOffsetY = 5;
+            ctx.shadowBlur = 10;
+            ctx.fillRect(0, 0, width, ui.resultsAreaY);
+            ctx.restore();
+
+
+            ctx.strokeStyle = COLORS.border;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, ui.resultsAreaY);
+            ctx.lineTo(width, ui.resultsAreaY);
+            ctx.stroke();
+            
+            drawHeader(ui, width);
+            drawSearchForm(ui, width);
+        }
+
+        function drawHeader(ui, width) {
+            // --- НОВОЕ: Отрисовка логотипа ---
+            if (state.isLogoLoaded) {
+                const {x, y, size} = ui.logoRect;
+                ctx.drawImage(state.logo, x, y, size, size);
+            }
+            
+            // --- ИЗМЕНЕНО: Заголовок по центру ---
+            ctx.fillStyle = COLORS.darkText;
+            ctx.font = `bold ${30 * ui.scale}px Inter`;
+            ctx.textAlign = 'center'; // <-- Выравнивание по центру
+            ctx.textBaseline = 'middle';
+            ctx.fillText('Ваши заказы', ui.titlePos.x, ui.titlePos.y);
+        }
+
+        function drawSearchForm(ui, width) {
+            const { x, y, width: inputWidth, height } = ui.inputRect;
+
+            // --- Поле ввода ---
+            ctx.fillStyle = COLORS.inputBg;
+            drawRoundRect(x, y, inputWidth, height, 12 * ui.scale);
+            ctx.fill();
+
+            // Иконка лупы
+            const iconX = x + 15 * ui.scale;
+            const iconY = y + height / 2;
+            ctx.strokeStyle = COLORS.secondaryText;
+            ctx.lineWidth = 2 * ui.scale;
+            ctx.beginPath();
+            ctx.arc(iconX, iconY, 7 * ui.scale, 0, Math.PI * 2);
+            ctx.moveTo(iconX + 10 * ui.scale, iconY + 10 * ui.scale);
+            ctx.lineTo(iconX + 5 * ui.scale, iconY + 5 * ui.scale);
+            ctx.stroke();
+
+            // Текст и курсор
+            const textX = iconX + 22 * ui.scale;
+            ctx.textAlign = 'left';
+            ctx.font = `${16 * ui.scale}px Inter`;
+            if (state.promoCode) {
+                ctx.fillStyle = COLORS.darkText;
+                ctx.fillText(state.promoCode, textX, iconY);
+            } else if (!state.isInputFocused) {
+                ctx.fillStyle = COLORS.placeholder;
+                ctx.fillText('Введите промокод', textX, iconY);
+            }
+            if (state.isInputFocused && state.showCursor) {
+                const textWidth = ctx.measureText(state.promoCode).width;
+                ctx.fillStyle = COLORS.brandBlue;
+                ctx.fillRect(textX + textWidth + 1, iconY - 10 * ui.scale, 2 * ui.scale, 20 * ui.scale);
+            }
+        }
+        
+        function drawResults(ui, width, height) {
+            const resultsClipY = ui.resultsAreaY;
+            const resultsHeight = height - resultsClipY;
+            
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(0, resultsClipY, width, resultsHeight);
+            ctx.clip();
+
+            ctx.fillStyle = COLORS.background;
+            ctx.fillRect(0, resultsClipY, width, resultsHeight);
+
+            if (state.view === 'loading') { // Показываем лоадер
+                const centerX = width / 2;
+                const centerY = resultsClipY + resultsHeight / 2;
+                ctx.beginPath();
+                ctx.lineWidth = 3 * ui.scale;
+                ctx.strokeStyle = COLORS.brandBlue;
+                ctx.arc(centerX, centerY, 20 * ui.scale, state.loaderAngle, state.loaderAngle + Math.PI * 1.5);
+                ctx.stroke();
+                ctx.restore();
+                return;
+            }
+
+            if (state.message.text) {
+                ctx.fillStyle = COLORS.info;
+                ctx.font = `500 ${16 * ui.scale}px Inter`;
+                ctx.textAlign = 'center';
+                ctx.fillText(state.message.text, width / 2, resultsClipY + 50 * ui.scale);
+                ctx.restore();
+                return;
+            }
+            
+            let currentY = resultsClipY + state.scrollOffset + ui.padding;
+
+            state.deals.forEach(deal => {
+                const cardHeight = 85 * ui.scale;
+                deal.rect = { x: ui.padding, y: currentY, width: width - ui.padding * 2, height: cardHeight };
+                
+                // --- Отрисовка карточки сделки ---
+                ctx.fillStyle = COLORS.cardBg;
+                drawRoundRect(deal.rect.x, deal.rect.y, deal.rect.width, deal.rect.height, 12 * ui.scale);
+                if (state.clickedDeal.id === deal.ID) {
+                    ctx.fillStyle = COLORS.cardHighlight;
+                    ctx.fill();
+                    ctx.fillStyle = COLORS.cardBg;
+                }
+                ctx.fill();
+                ctx.strokeStyle = COLORS.border;
+                ctx.stroke();
+
+                // Текст
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+                
+                const stageName = stageMap[deal.STAGE_ID] || deal.STAGE_ID || 'Не указана';
+                ctx.fillStyle = COLORS.darkText;
+                ctx.font = `600 ${15 * ui.scale}px Inter`;
+                const titleMaxWidth = deal.rect.width * 0.6;
+                const truncatedTitle = truncateText(deal.TITLE || 'Без названия', titleMaxWidth);
+                ctx.fillText(truncatedTitle, deal.rect.x + 15 * ui.scale, deal.rect.y + 22 * ui.scale);
+                
+                ctx.fillStyle = COLORS.secondaryText;
+                ctx.font = `500 ${13 * ui.scale}px Inter`;
+                ctx.fillText(`Стадия: ${stageName}`, deal.rect.x + 15 * ui.scale, deal.rect.y + 55 * ui.scale);
+
+                const formattedAmount = new Intl.NumberFormat('ru-RU', { style: 'currency', currency: deal.CURRENCY_ID || 'RUB' }).format(deal.OPPORTUNITY || 0);
+                ctx.textAlign = 'right';
+                ctx.fillStyle = COLORS.darkText;
+                ctx.font = `500 ${14 * ui.scale}px Inter`;
+                ctx.fillText(formattedAmount, deal.rect.x + deal.rect.width - (15 * ui.scale), deal.rect.y + 22 * ui.scale);
+
+                currentY += cardHeight + 10 * ui.scale;
+            });
+            state.totalContentHeight = (currentY - (resultsClipY + state.scrollOffset));
+            ctx.restore();
+        }
+
+        // --- Логика API ---
+        async function fetchDeals() {
+            if (!state.promoCode) {
+                state.deals = [];
+                state.message = { text: 'Введите промокод, чтобы начать поиск.', type: 'info' };
+                return;
+            }
+            state.view = 'loading';
+            state.message.text = '';
+            
+            const bitrixWebhookUrl = 'https://crm.pereplan-one.ru/rest/27754/j59q6uk0m5mddshs/crm.deal.list.json';
+            try {
+                 const response = await fetch(bitrixWebhookUrl, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        filter: { "UF_CRM_6751872F03C03": state.promoCode },
+                        select: ["ID", "TITLE", "STAGE_ID", "OPPORTUNITY", "CURRENCY_ID"]
+                    })
+                });
+                if (!response.ok) throw new Error('Network response was not ok.');
+                const data = await response.json();
+                if (data.result && data.result.length > 0) {
+                    state.deals = data.result;
+                    state.message.text = '';
+                } else {
+                    state.deals = [];
+                    state.message = { text: 'Сделки не найдены.', type: 'info' };
+                }
+            } catch (error) {
+                state.deals = [];
+                state.message = { text: 'Ошибка сети. Попробуйте позже.', type: 'error' };
+            } finally {
+                state.view = 'form'; // Всегда возвращаемся в этот режим
+                state.scrollOffset = 0;
+                resizeAndDraw();
+            }
+        }
+        
+        // --- Анимация и рендеринг ---
+        function runAnimation() {
+            if(state.view === 'loading') state.loaderAngle += 0.1;
+
+            if (state.clickedDeal.id && Date.now() - state.clickedDeal.timestamp > 200) {
+                state.clickedDeal.id = null;
+            }
+            draw();
+            requestAnimationFrame(runAnimation);
+        }
+
+        // --- Обработчики событий ---
+        function resizeAndDraw() {
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvasContainer.getBoundingClientRect();
+            
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            
+            positionInput();
+            draw();
+        }
+
+        function positionInput() {
+            const rect = canvas.getBoundingClientRect();
+            const ui = getUI(rect.width, rect.height);
+            const { x, y, width, height } = ui.inputRect;
+            
+            hiddenInput.style.left = `${rect.left + x}px`;
+            hiddenInput.style.top = `${rect.top + y}px`;
+            hiddenInput.style.width = `${width}px`;
+            hiddenInput.style.height = `${height}px`;
+            hiddenInput.style.fontSize = `${16 * ui.scale}px`;
+        }
+        
+        hiddenInput.addEventListener('input', (e) => {
+            state.promoCode = e.target.value;
+            state.message.text = '';
+            if(e.target.value === '') {
+                state.deals = [];
+                state.message = { text: 'Введите промокод, чтобы начать поиск.', type: 'info' };
+            }
+        });
+        
+        hiddenInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                fetchDeals();
+                hiddenInput.blur(); // Скрываем клавиатуру
+            }
+        });
+        
+        hiddenInput.addEventListener('focus', () => { state.isInputFocused = true; });
+        hiddenInput.addEventListener('blur', () => { state.isInputFocused = false; });
+
+        function handlePointerMove(e) {
+            const rect = canvas.getBoundingClientRect();
+            const y = (e.clientY || e.touches[0].clientY) - rect.top;
+            
+            if (state.isDragging) {
+                 const deltaY = y - state.lastDragY;
+                 state.lastDragY = y;
+                 state.scrollOffset += deltaY;
+                 const ui = getUI(rect.width, rect.height);
+                 const resultsHeight = rect.height - ui.resultsAreaY;
+                 const listHeight = state.totalContentHeight - ui.resultsAreaY - ui.padding;
+                 const minScroll = Math.min(0, resultsHeight - listHeight - ui.padding);
+                 state.scrollOffset = Math.max(minScroll, Math.min(0, state.scrollOffset));
+            }
+        }
+
+        function handlePointerDown(e) {
+            const rect = canvas.getBoundingClientRect();
+            const y = (e.clientY || e.touches[0].clientY) - rect.top;
+            const ui = getUI(rect.width, rect.height);
+
+            if (y > ui.resultsAreaY) {
+                state.isDragging = true;
+                state.dragStartY = y;
+                state.lastDragY = y;
+            }
+        }
+
+        function handlePointerUp(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const ui = getUI(rect.width, rect.height);
+            
+            const wasSimpleClick = !state.isDragging || Math.abs(y - state.dragStartY) < 10;
+            
+            if (wasSimpleClick) {
+                const { x: inputX, y: inputY, width: inputWidth, height: inputHeight } = ui.inputRect;
+                if (y > inputY && y < inputY + inputHeight && x > inputX && x < inputX + inputWidth) {
+                    hiddenInput.focus();
+                }
+
+                if (y > ui.resultsAreaY) {
+                    state.deals.forEach(deal => {
+                        const dealTop = deal.rect.y + state.scrollOffset;
+                        const dealBottom = dealTop + deal.rect.height;
+                         if (x >= deal.rect.x && x <= deal.rect.x + deal.rect.width && y >= dealTop && y <= dealBottom) {
+                            console.log('Clicked on deal:', deal.ID);
+                            state.clickedDeal = { id: deal.ID, timestamp: Date.now() };
+                        }
+                    });
+                }
+            }
+
+            state.isDragging = false;
+        }
+
+        // --- Инициализация ---
+        canvas.addEventListener('mousemove', handlePointerMove);
+        canvas.addEventListener('mousedown', handlePointerDown);
+        canvas.addEventListener('mouseup', handlePointerUp);
+        canvas.addEventListener('mouseleave', () => { state.isDragging = false; });
+        
+        canvas.addEventListener('touchmove', handlePointerMove, { passive: true });
+        canvas.addEventListener('touchstart', handlePointerDown, { passive: true });
+        canvas.addEventListener('touchend', (e) => handlePointerUp({ clientX: e.changedTouches[0].clientX, clientY: e.changedTouches[0].clientY }));
+
+        setInterval(() => { state.showCursor = !state.showCursor; }, 500);
+
+        window.addEventListener('load', () => { resizeAndDraw(); runAnimation(); });
+        window.addEventListener('resize', resizeAndDraw);
+    </script>
+</body>
+</html>
+
